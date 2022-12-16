@@ -83,4 +83,81 @@ abstract contract OpsTaskCreator is OpsReady {
     function _singleExecModuleArg() internal pure returns (bytes memory) {
         return bytes("");
     }
+
+    function _getTaskId(
+        address taskCreator,
+        address execAddress,
+        bytes4 execSelector,
+        ModuleData memory moduleData,
+        address feeToken
+    ) internal pure returns (bytes32 taskId) {
+        if (_shouldGetLegacyTaskId(moduleData.modules)) {
+            bytes32 resolverHash = _getResolverHash(moduleData.args[0]);
+
+            taskId = _getLegacyTaskId(
+                taskCreator,
+                execAddress,
+                execSelector,
+                feeToken == address(0),
+                feeToken,
+                resolverHash
+            );
+        } else {
+            taskId = keccak256(
+                abi.encode(
+                    taskCreator,
+                    execAddress,
+                    execSelector,
+                    moduleData,
+                    feeToken
+                )
+            );
+        }
+    }
+
+    function _getLegacyTaskId(
+        address taskCreator,
+        address execAddress,
+        bytes4 execSelector,
+        bool useTaskTreasuryFunds,
+        address feeToken,
+        bytes32 resolverHash
+    ) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    taskCreator,
+                    execAddress,
+                    execSelector,
+                    useTaskTreasuryFunds,
+                    feeToken,
+                    resolverHash
+                )
+            );
+    }
+
+    function _shouldGetLegacyTaskId(Module[] memory _modules)
+        private
+        pure
+        returns (bool)
+    {
+        uint256 length = _modules.length;
+
+        if (
+            (length == 1 && _modules[0] == Module.RESOLVER) ||
+            (length == 2 &&
+                _modules[0] == Module.RESOLVER &&
+                _modules[1] == Module.TIME)
+        ) return true;
+
+        return false;
+    }
+
+    function _getResolverHash(bytes memory resolverModuleArg)
+        private
+        pure
+        returns (bytes32)
+    {
+        return keccak256(resolverModuleArg);
+    }
 }
