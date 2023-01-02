@@ -52,6 +52,8 @@ contract FuruGelato is ResolverWhitelist, DSProxyBlacklist, OpsTaskCreator {
             _resolverData
         );
 
+        _dsProxyTasks[msg.sender].add(taskId);
+
         emit LogTaskCreated(msg.sender, taskId);
     }
 
@@ -60,7 +62,12 @@ contract FuruGelato is ResolverWhitelist, DSProxyBlacklist, OpsTaskCreator {
         address _resolverAddress,
         bytes32 _taskId,
         bytes calldata _executionData
-    ) external onlyValidResolver(_resolverAddress) onlyValidDSProxy(_dsProxy) {
+    )
+        external
+        onlyDedicatedMsgSender
+        onlyValidResolver(_resolverAddress)
+        onlyValidDSProxy(_dsProxy)
+    {
         IExampleResolver(_resolverAddress).onExec(
             msg.sender,
             _taskId,
@@ -80,7 +87,7 @@ contract FuruGelato is ResolverWhitelist, DSProxyBlacklist, OpsTaskCreator {
         external
     {
         bytes32 taskId = _getTaskId(
-            msg.sender,
+            address(this),
             address(this),
             this.exec.selector,
             _getModuleData(_resolverAddress, _resolverData),
@@ -100,7 +107,17 @@ contract FuruGelato is ResolverWhitelist, DSProxyBlacklist, OpsTaskCreator {
 
         _cancelTask(taskId);
 
+        _dsProxyTasks[msg.sender].remove(taskId);
+
         emit LogTaskCancelled(msg.sender, taskId);
+    }
+
+    function getTaskIdsByUser(address _dsProxy)
+        external
+        view
+        returns (bytes32[] memory)
+    {
+        return _dsProxyTasks[_dsProxy].values();
     }
 
     /**

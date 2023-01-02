@@ -65,7 +65,7 @@ contract ExampleResolver {
 
         // Verify if the task is valid
         bytes32 taskId = LibTaskId.getTaskId(
-            _dsProxy,
+            furuGelato,
             furuGelato,
             IFuruGelato.exec.selector,
             _getModuleData(_dsProxy, _resolverData),
