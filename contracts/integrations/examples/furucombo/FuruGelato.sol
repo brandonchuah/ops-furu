@@ -21,6 +21,11 @@ contract FuruGelato is ResolverWhitelist, DSProxyBlacklist, OpsTaskCreator {
     event LogTaskCancelled(address indexed dsProxy, bytes32 indexed taskId);
     event LogExecSuccess(address indexed dsProxy, bytes32 indexed taskId);
 
+    modifier onlyFundsOwner() {
+        require(msg.sender == fundsOwner, "FuruGelato: Only funds owner");
+        _;
+    }
+
     /**
      * @param _ops Automate (fka Ops) contract address - https://docs.gelato.network/developer-products/gelato-ops-smart-contract-automation-hub/contract-addresses
      * @param _fundsOwner Furucombo's owner address. (Used for withdrawing funds deposited into Gelato Balance)
@@ -110,6 +115,12 @@ contract FuruGelato is ResolverWhitelist, DSProxyBlacklist, OpsTaskCreator {
         _dsProxyTasks[msg.sender].remove(taskId);
 
         emit LogTaskCancelled(msg.sender, taskId);
+    }
+
+    function depositFunds(uint256 _amount) external payable onlyFundsOwner {
+        require(msg.value == _amount, "FuruGelato: Value mismatch");
+
+        _depositFunds(_amount, ETH);
     }
 
     function getTaskIdsByUser(address _dsProxy)
